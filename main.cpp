@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <random>
 
 bool finished(std::vector<std::vector<bool>> &striked);
 void print_table(
@@ -17,12 +18,18 @@ int main()
 	std::cin >> rows;
 	std::cin >> columns;
 
+	// Forward declaration
 	std::vector<std::vector<int>> cost_table(rows, std::vector<int>(columns));
 	std::vector<std::vector<bool>> striked(rows, std::vector<bool>(columns));
 	int lowest;
 	std::vector<std::pair<int, int>> possibles;
+	std::pair<int, int> chosen;
 	int highest_alloc, row, column, curr;
 	std::vector<std::pair<int, int>> answer;
+
+	// PRNG
+	std::random_device rd;
+	std::mt19937_64 mt(rd());
 
 	// Isi tabel dengan cost
 	for (auto &row : cost_table)
@@ -44,41 +51,30 @@ int main()
 		// Cari cost terendah
 		lowest = std::numeric_limits<int>::max();
 		for (size_t i = 0; i < cost_table.size(); i++)
-		{
 			for (size_t j = 0; j < cost_table.at(i).size(); j++)
-			{
 				if (!striked.at(i).at(j) && cost_table.at(i).at(j) <= lowest)
-				{
 					lowest = cost_table.at(i).at(j);
-				}
-			}
-		}
 
 		// Cari index cost terendah
 		possibles.clear();
 		for (size_t i = 0; i < cost_table.size(); i++)
-		{
 			for (size_t j = 0; j < cost_table.at(i).size(); j++)
-			{
 				if (!striked.at(i).at(j) && cost_table.at(i).at(j) == lowest)
-				{
 					possibles.push_back(std::make_pair(i, j));
-				}
-			}
-		}
 
-		// Test masing-masing untuk alokasi tertinggi
-		highest_alloc = std::numeric_limits<int>::max();
-		for (const auto &x : possibles)
+		// Jika cost minimum tidak unik, pilih secara random mana yang dipakai
+		if (possibles.size() > 1)
 		{
-			curr = std::min(supply[x.first], demand[x.second]);
-			if (curr * cost_table.at(x.first).at(x.second) < highest_alloc)
-			{
-				highest_alloc = curr;
-				row = x.first;
-				column = x.second;
-			}
+			std::uniform_int_distribution<> distrib(0, possibles.size() - 1);
+			chosen = possibles.at(distrib(mt));			
 		}
+		else
+		{
+			chosen = possibles.at(0);
+		}
+		highest_alloc = std::min(supply.at(chosen.first), demand.at(chosen.second));
+		row = chosen.first;
+		column = chosen.second;
 
 		// Kurangi supply dan demand
 		supply[row] -= highest_alloc;
@@ -100,9 +96,7 @@ int main()
 
 	int total = 0;
 	for (const std::pair<int, int> &i : answer)
-	{
 		total += (i.first * i.second);
-	}
 	std::cout << total << '\n';
 	
 	return 0;
@@ -123,8 +117,7 @@ void print_table(
 	std::vector<std::vector<bool>> &striked,
 	std::vector<int> &supply,
 	std::vector<int> &demand
-)
-{
+){
 	for (auto i = 0; i < cost_table.size(); i++)
 	{
 		for (auto j = 0; j < cost_table.at(i).size(); j++)
