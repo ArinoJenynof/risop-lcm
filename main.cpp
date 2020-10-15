@@ -127,7 +127,7 @@ void print_table(
 			else
 				std::cout << cost_table.at(i).at(j) << '\t';
 		}
-		std::cout << "\t" << supply.at(i) << '\n';
+		std::cout << supply.at(i) << '\n';
 	}
 
 	for (auto it = demand.begin(); it != demand.end(); it++)
