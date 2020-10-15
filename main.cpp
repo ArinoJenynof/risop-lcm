@@ -4,7 +4,12 @@
 #include <limits>
 
 bool finished(std::vector<std::vector<bool>> &striked);
-void print_table(std::vector<std::vector<int>> &cost_table, std::vector<std::vector<bool>> &striked);
+void print_table(
+	std::vector<std::vector<int>> &cost_table,
+	std::vector<std::vector<bool>> &striked,
+	std::vector<int> &supply,
+	std::vector<int> &demand
+);
 
 int main()
 {
@@ -33,7 +38,7 @@ int main()
 	for (auto &x : demand)
 		std::cin >> x;
 
-	// print_table(cost_table, striked);
+	print_table(cost_table, striked, supply, demand);
 	while (!finished(striked))
 	{
 		// Cari cost terendah
@@ -67,7 +72,6 @@ int main()
 		for (const auto &x : possibles)
 		{
 			curr = std::min(supply[x.first], demand[x.second]);
-			// std::cout << "(" << x.first << ", " << x.second << ") dengan alokasi " << curr << '\n';
 			if (curr * cost_table.at(x.first).at(x.second) < highest_alloc)
 			{
 				highest_alloc = curr;
@@ -75,7 +79,6 @@ int main()
 				column = x.second;
 			}
 		}
-		// std::cout << "yang dipilih (" << row << ", " << column << ") dengan alokasi " << highest_alloc << '\n';
 
 		// Kurangi supply dan demand
 		supply[row] -= highest_alloc;
@@ -92,7 +95,7 @@ int main()
 
 		// Masukkan ke penyelesaian
 		answer.push_back(std::make_pair(cost_table.at(row).at(column), highest_alloc));
-		// print_table(cost_table, striked);
+		print_table(cost_table, striked, supply, demand);
 	}
 
 	int total = 0;
@@ -115,7 +118,12 @@ bool finished(std::vector<std::vector<bool>> &striked)
 	return true;
 }
 
-void print_table(std::vector<std::vector<int>> &cost_table, std::vector<std::vector<bool>> &striked)
+void print_table(
+	std::vector<std::vector<int>> &cost_table,
+	std::vector<std::vector<bool>> &striked,
+	std::vector<int> &supply,
+	std::vector<int> &demand
+)
 {
 	for (auto i = 0; i < cost_table.size(); i++)
 	{
@@ -126,7 +134,10 @@ void print_table(std::vector<std::vector<int>> &cost_table, std::vector<std::vec
 			else
 				std::cout << cost_table.at(i).at(j) << '\t';
 		}
-		std::cout << '\n';
+		std::cout << "\t" << supply.at(i) << '\n';
 	}
-	std::cout << '\n';
+
+	for (auto it = demand.begin(); it != demand.end(); it++)
+		std::cout << *it << '\t';
+	std::cout << "\n\n";
 }
