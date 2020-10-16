@@ -15,7 +15,9 @@ void print_table(
 	std::vector<int> &supply,
 	std::vector<int> &demand,
 	std::ofstream &out,
-	int &counter
+	int &counter,
+	std::pair<int, int> &chosen,
+	int &allocation
 );
 
 int main()
@@ -60,7 +62,20 @@ int main()
 		for (auto &x : demand)
 			inp >> x;
 
-		print_table(cost_table, striked, supply, demand, out, counter);
+		out << "Tabel awal\n";
+		for (int i = 0; i < cost_table.size(); i++)
+		{
+			for (int j = 0; j < cost_table.at(i).size(); j++)
+			{
+				out << cost_table.at(i).at(j) << '\t';
+			}
+			out << supply.at(i) << '\n';
+		}
+
+		for (auto it = demand.begin(); it != demand.end(); it++)
+			out << *it << '\t';
+		out << "\n\n";
+
 		while (!finished(striked))
 		{
 			// Cari cost terendah
@@ -107,7 +122,7 @@ int main()
 
 			// Masukkan ke penyelesaian
 			answer.push_back(std::make_pair(cost_table.at(row).at(column), allocation));
-			print_table(cost_table, striked, supply, demand, out, ++counter);
+			print_table(cost_table, striked, supply, demand, out, ++counter, chosen, allocation);
 		}
 
 		int total = 0;
@@ -142,16 +157,23 @@ void print_table(
 	std::vector<int> &supply,
 	std::vector<int> &demand,
 	std::ofstream &out,
-	int &counter
+	int &counter,
+	std::pair<int, int> &chosen,
+	int &allocation
 ){
 	if (counter > 0)
 		out << "Iterasi ke-" << counter << '\n';
-	for (auto i = 0; i < cost_table.size(); i++)
+	for (int i = 0; i < cost_table.size(); i++)
 	{
-		for (auto j = 0; j < cost_table.at(i).size(); j++)
+		for (int j = 0; j < cost_table.at(i).size(); j++)
 		{
 			if (striked.at(i).at(j))
-				out << "x\t";
+			{
+				if (i == chosen.first && j == chosen.second)
+					out << '(' << cost_table.at(i).at(j) << "," << allocation << ")\t";
+				else
+					out << "x\t";
+			}
 			else
 				out << cost_table.at(i).at(j) << '\t';
 		}
