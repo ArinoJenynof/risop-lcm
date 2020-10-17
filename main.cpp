@@ -11,13 +11,12 @@
 bool finished(std::vector<std::vector<bool>> &striked);
 void print_table(
 	std::vector<std::vector<int>> &cost_table,
-	std::vector<std::vector<bool>> &striked,
 	std::vector<int> &supply,
 	std::vector<int> &demand,
 	std::ofstream &out,
 	int &counter,
-	std::pair<int, int> &chosen,
-	int &allocation
+	std::vector<std::pair<int, int>> &chosen,
+	std::vector<int> &allocation
 );
 
 int main()
@@ -29,6 +28,7 @@ int main()
 	const std::string soal = ".\\soal";
 	struct dirent *entry;
 	DIR *dp = opendir(soal.c_str());
+	std::cout << "Membaca folder soal. . .\n";
 	while ((entry = readdir(dp)))
 	{
 		int counter = 0;
@@ -36,6 +36,7 @@ int main()
 		std::string nama(entry->d_name);
 		if (nama == "." || nama == "..")
 			continue;
+		std::cout << "Membaca soal " << nama << '\n';
 		std::ifstream inp(soal + "\\" + nama);
 		std::ofstream out(".\\jawab\\" + nama);
 
@@ -44,8 +45,8 @@ int main()
 		inp >> rows;
 		inp >> columns;
 		
-		std::vector<std::vector<int>> cost_table(rows, std::vector<int>(columns));
-		std::vector<std::vector<bool>> striked(rows, std::vector<bool>(columns));
+		std::vector<std::vector<int>> cost_table(rows, std::vector<int>(columns, 0));
+		std::vector<std::vector<bool>> striked(rows, std::vector<bool>(columns, 0));
 		std::vector<std::pair<int, int>> answer(0);
 
 		// Isi tabel dengan cost
@@ -76,6 +77,8 @@ int main()
 			out << *it << '\t';
 		out << "\n\n";
 
+		std::vector<std::pair<int, int>> chosen(0);
+		std::vector<int> allocation(0);
 		while (!finished(striked))
 		{
 			// Cari cost terendah
@@ -93,23 +96,22 @@ int main()
 						possibles.push_back(std::make_pair(i, j));
 
 			// Jika cost minimum tidak unik, pilih secara random mana yang dipakai
-			std::pair<int, int> chosen;
 			if (possibles.size() > 1)
 			{
 				std::uniform_int_distribution<> distrib(0, possibles.size() - 1);
-				chosen = possibles.at(distrib(mt));			
+				chosen.push_back(possibles.at(distrib(mt)));
 			}
 			else
 			{
-				chosen = possibles.at(0);
+				chosen.push_back(possibles.at(0));
 			}
-			int allocation = std::min(supply.at(chosen.first), demand.at(chosen.second));
-			int row = chosen.first;
-			int column = chosen.second;
+			allocation.push_back(std::min(supply.at(chosen.at(counter).first), demand.at(chosen.at(counter).second)));
+			int row = chosen.at(counter).first;
+			int column = chosen.at(counter).second;
 
 			// Kurangi supply dan demand
-			supply.at(row) -= allocation;
-			demand.at(column) -= allocation;
+			supply.at(row) -= allocation.at(counter);
+			demand.at(column) -= allocation.at(counter);
 
 			// Coret jika sudah 0
 			if (supply.at(row) == 0)
@@ -121,22 +123,21 @@ int main()
 					it->at(column) = true;
 
 			// Masukkan ke penyelesaian
-			answer.push_back(std::make_pair(cost_table.at(row).at(column), allocation));
-			print_table(cost_table, striked, supply, demand, out, ++counter, chosen, allocation);
+			answer.push_back(std::make_pair(cost_table.at(row).at(column), allocation.at(counter)));
+			print_table(cost_table, supply, demand, out, ++counter, chosen, allocation);
 		}
 
 		int total = 0;
 		for (const std::pair<int, int> &i : answer)
 			total += (i.first * i.second);
 		out << "Solusi: " << total << '\n';
-		answer.clear();
 
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = end - begin;
 		out << "Runtime: " << std::chrono::duration<float, std::milli>(elapsed).count() << "ms\n";
-		std::cout << "Runtime: " << std::chrono::duration<float, std::milli>(elapsed).count() << "ms\n";
 	}
 	closedir(dp);
+	std::cout << "Jawaban per soal ada di folder 'jawab'";
 
 	return 0;
 }
@@ -153,27 +154,21 @@ bool finished(std::vector<std::vector<bool>> &striked)
 
 void print_table(
 	std::vector<std::vector<int>> &cost_table,
-	std::vector<std::vector<bool>> &striked,
 	std::vector<int> &supply,
 	std::vector<int> &demand,
 	std::ofstream &out,
 	int &counter,
-	std::pair<int, int> &chosen,
-	int &allocation
+	std::vector<std::pair<int, int>> &chosen,
+	std::vector<int> &allocation
 ){
-	if (counter > 0)
-		out << "Iterasi ke-" << counter << '\n';
+	out << "Iterasi ke-" << counter << '\n';
 	for (int i = 0; i < cost_table.size(); i++)
 	{
 		for (int j = 0; j < cost_table.at(i).size(); j++)
 		{
-			if (striked.at(i).at(j))
-			{
-				if (i == chosen.first && j == chosen.second)
-					out << '(' << cost_table.at(i).at(j) << "," << allocation << ")\t";
-				else
-					out << "x\t";
-			}
+			auto it = std::find(chosen.begin(), chosen.end(), std::pair<int, int>(i, j));
+			if (it != chosen.end())
+				out << '(' << cost_table.at(i).at(j) << "," << allocation.at(it - chosen.begin()) << ")\t";
 			else
 				out << cost_table.at(i).at(j) << '\t';
 		}
