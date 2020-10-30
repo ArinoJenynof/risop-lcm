@@ -13,6 +13,8 @@ void print_table(
 	std::vector<std::vector<int>> &cost_table,
 	std::vector<int> &supply,
 	std::vector<int> &demand,
+	std::vector<int> &shallow_supply,
+	std::vector<int> &shallow_demand,
 	std::ofstream &out,
 	int &counter,
 	std::vector<std::pair<int, int>> &chosen,
@@ -28,7 +30,7 @@ int main()
 	const std::string soal = ".\\soal";
 	struct dirent *entry;
 	DIR *dp = opendir(soal.c_str());
-	std::cout << "Membaca folder soal. . .\n";
+	// std::cout << "Membaca folder soal. . .\n";
 	while ((entry = readdir(dp)))
 	{
 		int counter = 0;
@@ -62,6 +64,8 @@ int main()
 			inp >> x;
 		for (auto &x : demand)
 			inp >> x;
+		std::vector<int> shallow_supply(supply);
+		std::vector<int> shallow_demand(demand);
 
 		out << "Tabel awal\n";
 		for (int i = 0; i < cost_table.size(); i++)
@@ -124,13 +128,14 @@ int main()
 
 			// Masukkan ke penyelesaian
 			answer.push_back(std::make_pair(cost_table.at(row).at(column), allocation.at(counter)));
-			print_table(cost_table, supply, demand, out, ++counter, chosen, allocation);
+			print_table(cost_table, supply, demand, shallow_supply, shallow_demand, out, ++counter, chosen, allocation);
 		}
 
 		int total = 0;
 		for (const std::pair<int, int> &i : answer)
 			total += (i.first * i.second);
 		out << "Solusi: " << total << '\n';
+		// std::cout << total << '\n';
 
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = end - begin;
@@ -156,6 +161,8 @@ void print_table(
 	std::vector<std::vector<int>> &cost_table,
 	std::vector<int> &supply,
 	std::vector<int> &demand,
+	std::vector<int> &shallow_supply,
+	std::vector<int> &shallow_demand,
 	std::ofstream &out,
 	int &counter,
 	std::vector<std::pair<int, int>> &chosen,
@@ -172,10 +179,45 @@ void print_table(
 			else
 				out << cost_table.at(i).at(j) << '\t';
 		}
-		out << supply.at(i) << '\n';
+		out << shallow_supply.at(i) << ' ';
+		bool in_chosen = false;
+		for (auto it = chosen.begin(); it != chosen.end(); it++)
+		{
+			if (it->first == i)
+			{
+				in_chosen = true;
+				break;
+			}
+		}
+		if (in_chosen)
+		{
+			out << "(" << supply.at(i) << ")";
+		}
+		out << '\n';
+		
 	}
 
-	for (auto it = demand.begin(); it != demand.end(); it++)
-		out << *it << '\t';
+	for (int i = 0; i < shallow_demand.size(); i++)
+	{
+		out << shallow_demand.at(i) << ' ';
+		bool in_chosen = false;
+		for (auto it = chosen.begin(); it != chosen.end(); it++)
+		{
+			if (it->second == i)
+			{
+				in_chosen = true;
+				break;
+			}
+		}
+		if (in_chosen)
+		{
+			out << "(" << demand.at(i) << ")\t";
+		}
+		else
+		{
+			out << '\t';
+		}
+		
+	}
 	out << "\n\n";
 }
